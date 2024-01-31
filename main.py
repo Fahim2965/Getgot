@@ -6,7 +6,7 @@ app = Flask(__name__)
 def index():
     user_name = "goodjob"
     
-    return render_template("home.html.jinja", user_name = user_name)
+    return render_template("land.html.jinja", user_name = user_name)
 
 @app.route('/ping')
 def bub():
