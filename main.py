@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, request
 import flask_login
 import pymysql
 import pymysql.cursors
@@ -23,13 +23,13 @@ class User:
     
 
 
-@login_manager.user_lander
+@login_manager.user_loader
 def load_user(user_id):
     cursor = conn.cursor()
-    cursor.excute("SELECT * FROM `users` WHERE `id` = " + user_id)
+    cursor.execute(f"SELECT * FROM `users` WHERE `id` = {user_id}")
     result = cursor.fetchone()
     cursor.close()
-    conn.comMit()
+    conn.commit()
 
     if result is None:
         return None
@@ -49,48 +49,46 @@ conn = pymysql.connect(
 
 
 @app.route('/')
-def index():
+def landing_page():
+    if flask_login.current_user.is_authenticated:
+        return redirect('/feed')
+        
     return render_template('land.html.jinja')
 
 
 
 @app.route('/sign_up', methods =['GET', 'POST'])
-def index():
+def sign_up():
     if request.method == 'POST':
-        new_username = request.form["username"]
+        new_username = request.form['new_username']
+        new_email = request.form['new_email']
+        new_password = request.form['new_password']
         cursor = conn.cursor()
-        cursor.execute(f"INSERT INTO `todos` (`description`) VALUES ('{new_todo}')")
+        cursor.execute(f'INSERT INTO `users` (`username`, `email`, `password`) VALUES ("{new_username}", "{new_email}", "{new_password}");')
         cursor.close()
         conn.commit()
-
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM `todos` ORDER BY `complete`")
-    results = cursor.fetchall()
-    cursor.close()
-
+    return render_template('sign_up.html')
 
 
 @app.route('/sign_in', methods =['GET', 'POST'])
-def index():
+def sign_in():
     if request.method == 'POST':
         username = request.form["username"]
         password = request.form["password"]
-
         cursor = conn.cursor()
-        cursor.execute(f""" SELECT * FROM `users` WHERE `username` = '{username}' """)
+        cursor.execute(f' SELECT * FROM `users` WHERE `username` = "{username}" ')
         result = cursor.fetchone()
         cursor.close()
         conn.commit()
         
-        if password == user["password"]:
-            user =load_user(result['id'])
+        if password == result["password"]:
+            user = load_user(result['id'])
             flask_login.login_user(user)
             return redirect('/feed')
-
-    return render_template("sign-in.html")
+    return render_template("sign_in.html")
 
 
 @app.route('/feed')
-@flask_login.login_reduired
+@flask_login.login_required
 def post_feed():
-    return 'feedpage'
+    return flask_login.current_user
