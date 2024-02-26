@@ -5,7 +5,8 @@ import pymysql.cursors
 
 
 app = Flask(__name__)
-app.secret_key = "something_secret" # Change this!
+app.secret_key = "2024ULX2023" # Change this!
+
 
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
@@ -21,6 +22,7 @@ class User:
     def get_id(self):
         return str(self.id)
     
+
 
 
 @login_manager.user_loader
@@ -48,11 +50,14 @@ def connect_db():
         autocommit=True
     )
 
+
 def get_db():
     '''Opens a new database connection per request.'''        
     if not hasattr(g, 'db'):
         g.db = connect_db()
     return g.db    
+
+
 
 @app.teardown_appcontext
 def close_db(error):
@@ -62,12 +67,14 @@ def close_db(error):
 
 
 
+
 @app.route('/')
 def landing_page():
     if flask_login.current_user.is_authenticated:
         return redirect('/feed')
         
     return render_template('land.html.jinja')
+
 
 
 
@@ -82,6 +89,7 @@ def sign_up():
         cursor.close()
         get_db().commit()
     return render_template('sign_up.html')
+
 
 
 @app.route('/sign_in', methods =['GET', 'POST'])
@@ -102,17 +110,26 @@ def sign_in():
     return render_template("sign_in.html")
 
 
-@app.route('/feed')
+
+@app.route('/feed', methods=['GET', 'POST'])
 @flask_login.login_required
 def post_feed():
+    cursor = get_db().cursor()
+    cursor.execute("SELECT * FROM `Posts` INNER JOIN `User` ON `Posts`.user_id = `User`.ID")
+    results = cursor.fetchall()
+    cursor.close()
+    return render_template("feed.html.jinja", posts = results)
     return flask_login.current_user
 
-@app.route('/post', methods=['POST'])
+
+
+@app.route('/post', methods=['GET', 'POST'])
 @flask_login.login_required
-def create_post():
+def post():
     description = request.form['description']
     user_id = flask_login.current_user.id
-
     cursor = get_db().cursor()
-
-    cursor.execute("INSERT INTO `posts` (`description`, `user_id`)")
+    cursor.execute(f"INSERT INTO `Posts` (`description`, `user_id`) VALUES ('{description}', '{user_id}')")
+    cursor.close()
+    get_db().commit
+    return redirect("/feed")
