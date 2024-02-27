@@ -21,7 +21,18 @@ class User:
 
     def get_id(self):
         return str(self.id)
-    
+
+
+
+def connect_db():
+    return pymysql.connect(
+        host="10.100.33.60",
+        user="fmuntasir2",
+        password="239442965",
+        database="fmuntasir2_getgotApp",
+        cursorclass=pymysql.cursors.DictCursor,
+        autocommit=True
+    )
 
 
 
@@ -37,18 +48,6 @@ def load_user(user_id):
         return None
     
     return User(result["id"], result["username"])
-
-
-
-def connect_db():
-    return pymysql.connect(
-        host="10.100.33.60",
-        user="YOUR_USERNAME",
-        password="YOUR_PASSWORD",
-        database="YOUR_DATABASE_NAME",
-        cursorclass=pymysql.cursors.DictCursor,
-        autocommit=True
-    )
 
 
 def get_db():
@@ -115,7 +114,7 @@ def sign_in():
 @flask_login.login_required
 def post_feed():
     cursor = get_db().cursor()
-    cursor.execute("SELECT * FROM `Posts` INNER JOIN `User` ON `Posts`.user_id = `User`.ID")
+    cursor.execute("SELECT * FROM `posts` INNER JOIN `users` ON `posts`.user_id = `users`.ID  ORDER BY `timestamp` DESC")
     results = cursor.fetchall()
     cursor.close()
     return render_template("feed.html.jinja", posts = results)
@@ -129,7 +128,7 @@ def post():
     description = request.form['description']
     user_id = flask_login.current_user.id
     cursor = get_db().cursor()
-    cursor.execute(f"INSERT INTO `Posts` (`description`, `user_id`) VALUES ('{description}', '{user_id}')")
+    cursor.execute(f"INSERT INTO `posts` (`description`, `user_id`) VALUES ('{description}', '{user_id}')")
     cursor.close()
     get_db().commit
     return redirect("/feed")
